@@ -79,7 +79,7 @@ def calculate(req: CalcRequest, db: Session = Depends(get_db)):
         for i, p in enumerate(satisfied):
             schedule_list.append(
                 {
-                    "schedule": p.schedule,
+                    "schedule": p.schedule or f"WT {p.wt_mm}mm",
                     "wt_mm": p.wt_mm,
                     "is_minimum": i == 0,
                 }

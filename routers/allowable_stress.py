@@ -21,15 +21,22 @@ def get_allowable_stresses(
         q = q.filter(AllowableStress.code == code)
     if material:
         q = q.filter(AllowableStress.material == material)
-    return q.order_by(AllowableStress.material, AllowableStress.temp_c).all()
+    return q.order_by(AllowableStress.id).all()
 
 
 @router.post("/upload")
-def upload_stress_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+def upload_stress_csv(
+    file: UploadFile = File(...),
+    mode: str = Query("add", pattern="^(add|replace)$"),
+    db: Session = Depends(get_db),
+):
+    if mode == "replace":
+        db.query(AllowableStress).delete()
+        db.commit()
+
     content = file.file.read().decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(content))
-    inserted = 0
-    skipped = 0
+    inserted = skipped = 0
     for row in reader:
         obj = AllowableStress(
             code=row["code"].strip(),
