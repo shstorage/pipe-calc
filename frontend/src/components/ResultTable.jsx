@@ -1,11 +1,67 @@
-export default function ResultTable({ results }) {
-  if (!results) return null
+export default function ResultTable({
+  results,
+  pipeStandard, onStandardChange,
+  dnMin, dnMax, onDnMinChange, onDnMaxChange,
+}) {
+  const displayResults = results
+    ? results.filter((row) => {
+        const lo = dnMin === '' ? -Infinity : parseInt(dnMin, 10)
+        const hi = dnMax === '' ? Infinity : parseInt(dnMax, 10)
+        return row.dn >= lo && row.dn <= hi
+      })
+    : null
 
   return (
     <div className="result-card card">
-      <h2 className="form-title">계산 결과</h2>
-      {results.length === 0 ? (
-        <p className="empty-msg">결과 없음</p>
+      <div className="result-header">
+        <h2 className="form-title">계산 결과</h2>
+        <div className="result-controls">
+          <div className="result-control-group">
+            <span className="field-label">적용 규격</span>
+            <div className="radio-group">
+              {['B36.10', 'B36.19'].map((s) => (
+                <label key={s} className="radio-label">
+                  <input
+                    type="radio"
+                    name="pipe_standard"
+                    value={s}
+                    checked={pipeStandard === s}
+                    onChange={() => onStandardChange(s)}
+                  />
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="result-control-group">
+            <span className="field-label">DN 범위</span>
+            <div className="dn-range-inputs">
+              <input
+                className="field-input dn-input"
+                type="number"
+                placeholder="최소"
+                value={dnMin}
+                onChange={(e) => onDnMinChange(e.target.value)}
+              />
+              <span className="dn-sep">~</span>
+              <input
+                className="field-input dn-input"
+                type="number"
+                placeholder="최대"
+                value={dnMax}
+                onChange={(e) => onDnMaxChange(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {results === null ? (
+        <div className="result-placeholder">
+          설계 조건을 입력하고 <strong>계산하기</strong> 버튼을 눌러주세요.
+        </div>
+      ) : displayResults.length === 0 ? (
+        <p className="empty-msg">해당 DN 범위에 결과가 없습니다.</p>
       ) : (
         <div className="table-wrapper">
           <table className="result-table">
@@ -14,13 +70,14 @@ export default function ResultTable({ results }) {
                 <th>DN</th>
                 <th>NPS</th>
                 <th>OD (mm)</th>
-                <th>요구 두께 (mm)</th>
+                <th>최소 요구 두께 (mm)</th>
+                <th>공칭 두께 (mm)</th>
                 <th>최소 만족 스케줄</th>
                 <th>두께 (mm)</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((row) => {
+              {displayResults.map((row) => {
                 const min = row.satisfied_schedules.find((s) => s.is_minimum)
                 return (
                   <tr key={row.dn} className={!min ? 'row-fail' : ''}>
@@ -28,6 +85,7 @@ export default function ResultTable({ results }) {
                     <td>{formatNps(row.nps)}</td>
                     <td>{row.od_mm}</td>
                     <td className="t-req">{row.t_required_mm}</td>
+                    <td className="t-nominal">{row.t_nominal_mm}</td>
                     <td>
                       {min ? (
                         <span className="badge badge-ok">{min.schedule}</span>

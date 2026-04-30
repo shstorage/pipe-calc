@@ -77,9 +77,15 @@
 
 @media (max-width: 900px) {
   .calc-layout { grid-template-columns: 1fr; }
+  .input-form.card { position: static; }
 }
 
 .result-area { min-width: 0; }
+
+.input-form.card {
+  position: sticky;
+  top: 88px;
+}
 
 /* ── Form ───────────────────────────────────── */
 .form-title {
@@ -190,7 +196,59 @@ select.field-input { cursor: pointer; }
 /* ── Result table ───────────────────────────── */
 .result-card { overflow: hidden; }
 
-.table-wrapper { overflow-x: auto; }
+.result-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.result-header .form-title { margin-bottom: 0; flex-shrink: 0; }
+
+.result-controls {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.result-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dn-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dn-sep { font-size: 13px; color: var(--text-sub); }
+
+.field-input.dn-input {
+  width: 80px;
+  text-align: center;
+}
+
+.result-placeholder {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 14px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+}
+
+.result-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 .cell-null { color: var(--text-sub); }
 
 .result-table {
@@ -218,6 +276,7 @@ select.field-input { cursor: pointer; }
 .result-table tr.row-fail td { background: #fff5f5; }
 
 .t-req { font-weight: 700; color: var(--primary); }
+.t-nominal { font-weight: 600; color: var(--text); }
 
 .badge {
   display: inline-block;

@@ -12,10 +12,12 @@ class CalcRequest(BaseModel):
     material: str
     design_pressure_mpa: float
     temperature_c: float
-    corrosion_allowance_mm: float = 1.5
+    corrosion_allowance_mm: float = 0.0
+    mill_tolerance_pct: float = 12.5
     joint_efficiency: float = 1.0
     y_coefficient: float = 0.4
     weld_strength_factor: float = 1.0
+    pipe_standard: str = "B36.10"
 
 
 def interpolate_stress(rows: list, temp: float) -> float:
@@ -51,9 +53,11 @@ def calculate(req: CalcRequest, db: Session = Depends(get_db)):
     Y = req.y_coefficient
     W = req.weld_strength_factor
     c = req.corrosion_allowance_mm
+    tol = req.mill_tolerance_pct / 100.0
 
     pipes = (
         db.query(PipeSchedule)
+        .filter(PipeSchedule.standard == req.pipe_standard)
         .order_by(PipeSchedule.dn, PipeSchedule.wt_mm)
         .all()
     )
@@ -72,7 +76,11 @@ def calculate(req: CalcRequest, db: Session = Depends(get_db)):
         else:
             t_req = (P * od) / (2 * (S * E * W + P * Y)) + c
 
-        satisfied = [p for p in group if p.wt_mm >= t_req]
+        # 공칭 두께: 제작 공차를 감안해 실제 주문해야 할 두께
+        t_nominal = t_req / (1 - tol) if tol > 0 else t_req
+
+        # 만족 스케줄 판단 기준: 공칭 두께
+        satisfied = [p for p in group if p.wt_mm >= t_nominal]
         satisfied.sort(key=lambda p: p.wt_mm)
 
         schedule_list = []
@@ -91,6 +99,7 @@ def calculate(req: CalcRequest, db: Session = Depends(get_db)):
                 "nps": nps,
                 "od_mm": od,
                 "t_required_mm": round(t_req, 3),
+                "t_nominal_mm": round(t_nominal, 3),
                 "allowable_stress_mpa": round(S, 2),
                 "satisfied_schedules": schedule_list,
             }
