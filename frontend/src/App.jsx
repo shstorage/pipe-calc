@@ -5,14 +5,14 @@ import { calculate } from './api/client'
 import './App.css'
 
 const INITIAL_FORM = {
-  code: 'B31.3',
-  material: '',
+  code: 'B31.1',
+  material_key: '',   // "{spec_no}||{grade}||{type_or_class}"
   design_pressure_mpa: '',
   temperature_c: '',
   corrosion_allowance_mm: '1.5',
   mill_tolerance_pct: '12.5',
   joint_efficiency: '1.0',
-  y_coefficient: '0.4',
+  y_coefficient: '',  // 비워두면 B31.1 Table 104.1.2(A) 자동
   weld_strength_factor: '1.0',
 }
 

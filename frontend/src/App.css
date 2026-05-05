@@ -440,3 +440,41 @@ select.field-input { cursor: pointer; }
   font-size: 13px;
 }
 .btn-danger { background: var(--danger) !important; }
+
+/* tab-bar actions */
+.tab-bar-actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ghost button */
+.btn-ghost {
+  height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+/* material info hint */
+.mat-info {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* 인풋 아래 보조 설명 */
+.field-hint {
+  font-size: 11px;
+  color: var(--text-sub);
+  line-height: 1.4;
+}
+
+/* stress table wider */
+.stress-table th, .stress-table td { white-space: nowrap; }
+
+/* creep badge */
+.badge-creep { color: #e65100; font-size: 10px; }

@@ -1,6 +1,7 @@
 import csv
 import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from database.db import get_db
@@ -34,6 +35,42 @@ def get_pipe_schedules(
     if dn is not None:
         q = q.filter(PipeSchedule.dn == dn)
     return q.order_by(PipeSchedule.id).all()
+
+
+@router.get("/export")
+def export_pipe_schedules(
+    standard: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    import openpyxl
+
+    q = db.query(PipeSchedule)
+    if standard:
+        q = q.filter(PipeSchedule.standard == standard)
+    rows = q.order_by(PipeSchedule.standard, PipeSchedule.dn, PipeSchedule.wt_mm).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "pipe_schedule"
+    ws.append([
+        "standard", "dn", "nps", "schedule", "identification",
+        "od_mm", "wt_mm", "mass_kg_m", "od_in", "wt_in", "mass_lb_ft",
+    ])
+    for r in rows:
+        ws.append([
+            r.standard, r.dn, r.nps, r.schedule, r.identification,
+            r.od_mm, r.wt_mm, r.mass_kg_m, r.od_in, r.wt_in, r.mass_lb_ft,
+        ])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"pipe_schedule_{standard or 'all'}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={fname}"},
+    )
 
 
 def _insert_rows(db: Session, rows: list[dict]) -> tuple[int, int]:
@@ -78,7 +115,7 @@ def _parse_excel_b3610(ws) -> list[dict]:
     rows = []
     for i, row in enumerate(ws.iter_rows(values_only=True)):
         if i == 0:
-            continue  # 헤더 스킵
+            continue
         _, _, od_in, wt_in, mass_lbft, ident, sch, dn, od_mm, wt_mm, mass_kgm = row
         if dn is None or wt_mm is None:
             continue
@@ -87,7 +124,7 @@ def _parse_excel_b3610(ws) -> list[dict]:
         elif ident is not None:
             schedule = ident
         else:
-            schedule = None  # 무명 중간두께
+            schedule = None
         rows.append({
             "standard": "B36.10",
             "dn": int(dn),
@@ -132,24 +169,61 @@ def _parse_excel_b3619(ws) -> list[dict]:
     return rows
 
 
+def _parse_excel_simple(ws) -> list[dict]:
+    """다운로드 후 재업로드 용 단순 포맷 파싱.
+    헤더: standard, dn, nps, schedule, identification,
+          od_mm, wt_mm, mass_kg_m, od_in, wt_in, mass_lb_ft
+    """
+    header = [c.value for c in next(ws.iter_rows(max_row=1))]
+    col = {h: i for i, h in enumerate(header) if h}
+    rows = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        dn = row[col["dn"]] if "dn" in col else None
+        wt_mm = row[col["wt_mm"]] if "wt_mm" in col else None
+        if dn is None or wt_mm is None:
+            continue
+
+        def g(key):
+            return row[col[key]] if key in col else None
+
+        rows.append({
+            "standard": str(g("standard") or "").strip(),
+            "dn": int(dn),
+            "nps": float(g("nps") or 0),
+            "schedule": str(g("schedule")).strip() if g("schedule") is not None else None,
+            "identification": str(g("identification")).strip() if g("identification") is not None else None,
+            "od_mm": float(g("od_mm")),
+            "wt_mm": float(wt_mm),
+            "mass_kg_m": float(g("mass_kg_m")) if g("mass_kg_m") is not None else None,
+            "od_in": float(g("od_in")) if g("od_in") is not None else None,
+            "wt_in": float(g("wt_in")) if g("wt_in") is not None else None,
+            "mass_lb_ft": float(g("mass_lb_ft")) if g("mass_lb_ft") is not None else None,
+        })
+    return rows
+
+
 def _parse_excel(content: bytes) -> list[dict]:
     try:
         import openpyxl
     except ImportError:
         raise HTTPException(status_code=500, detail="openpyxl 패키지가 필요합니다: uv add openpyxl")
 
-    import io as _io
-    wb = openpyxl.load_workbook(_io.BytesIO(content))
+    wb = openpyxl.load_workbook(io.BytesIO(content))
     rows = []
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
-        header = [c.value for c in next(ws.iter_rows(max_row=1))]
-        if "Identification" in header:
+        try:
+            header = [c.value for c in next(ws.iter_rows(max_row=1))]
+        except StopIteration:
+            continue
+        if "standard" in header:
+            rows.extend(_parse_excel_simple(ws))
+        elif "Identification" in header:
             rows.extend(_parse_excel_b3610(ws))
         elif "Remark" in header:
             rows.extend(_parse_excel_b3619(ws))
     if not rows:
-        raise HTTPException(status_code=400, detail="인식할 수 없는 Excel 형식입니다. B36.10/B36.19 양식을 사용하세요.")
+        raise HTTPException(status_code=400, detail="인식할 수 없는 Excel 형식입니다. B36.10/B36.19 양식 또는 내보낸 파일을 사용하세요.")
     return rows
 
 
