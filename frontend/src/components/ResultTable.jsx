@@ -1,6 +1,7 @@
 export default function ResultTable({
   results,
-  pipeStandard, onStandardChange,
+  calcInfo,
+  pipeStandard,
   dnMin, dnMax, onDnMinChange, onDnMaxChange,
 }) {
   const displayResults = results
@@ -14,24 +15,30 @@ export default function ResultTable({
   return (
     <div className="result-card card">
       <div className="result-header">
-        <h2 className="form-title">계산 결과</h2>
+        <div className="result-title-row">
+          <h2 className="form-title">계산 결과</h2>
+          {calcInfo && (
+            <div className="calc-params">
+              <span className="calc-param-item">
+                <span className="calc-param-label">S</span>
+                <span className="calc-param-value">{calcInfo.allowable_stress_mpa} MPa</span>
+              </span>
+              <span className="calc-param-item">
+                <span className="calc-param-label">Y</span>
+                <span className="calc-param-value">{calcInfo.y_coefficient}</span>
+              </span>
+              <span className="calc-param-item">
+                <span className="calc-param-label">W</span>
+                <span className="calc-param-value">{calcInfo.w_factor}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
         <div className="result-controls">
           <div className="result-control-group">
             <span className="field-label">적용 규격</span>
-            <div className="radio-group">
-              {['B36.10', 'B36.19'].map((s) => (
-                <label key={s} className="radio-label">
-                  <input
-                    type="radio"
-                    name="pipe_standard"
-                    value={s}
-                    checked={pipeStandard === s}
-                    onChange={() => onStandardChange(s)}
-                  />
-                  {s}
-                </label>
-              ))}
-            </div>
+            <span className="pipe-standard-tag">{pipeStandard ?? 'B36.10'}</span>
           </div>
           <div className="result-control-group">
             <span className="field-label">DN 범위</span>

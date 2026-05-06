@@ -4,8 +4,9 @@ import ResultTable from '../components/ResultTable'
 export default function Calculator({
   formValues, onFormChange,
   results, loading, error,
+  calcInfo,
   pipeStandard, dnMin, dnMax,
-  onCalculate, onStandardChange, onDnMinChange, onDnMaxChange,
+  onCalculate, onDnMinChange, onDnMaxChange,
 }) {
   return (
     <div className="calc-layout">
@@ -19,10 +20,10 @@ export default function Calculator({
         {error && <div className="error-msg">{error}</div>}
         <ResultTable
           results={results}
+          calcInfo={calcInfo}
           pipeStandard={pipeStandard}
           dnMin={dnMin}
           dnMax={dnMax}
-          onStandardChange={onStandardChange}
           onDnMinChange={onDnMinChange}
           onDnMaxChange={onDnMaxChange}
         />

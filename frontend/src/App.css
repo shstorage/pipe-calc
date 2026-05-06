@@ -199,11 +199,60 @@ select.field-input { cursor: pointer; }
 .result-header {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
-.result-header .form-title { margin-bottom: 0; flex-shrink: 0; }
+
+.result-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.result-title-row .form-title { margin-bottom: 0; }
+
+.calc-params {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.calc-param-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+.calc-param-label {
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.calc-param-value {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.pipe-standard-tag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  height: 32px;
+}
 
 .result-controls {
   display: flex;

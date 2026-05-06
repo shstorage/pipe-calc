@@ -5,15 +5,14 @@ import { calculate } from './api/client'
 import './App.css'
 
 const INITIAL_FORM = {
-  code: 'B31.1',
-  material_key: '',   // "{spec_no}||{grade}||{type_or_class}"
-  design_pressure_mpa: '',
+  material_key: '',
+  design_pressure_barg: '',
   temperature_c: '',
   corrosion_allowance_mm: '1.5',
   mill_tolerance_pct: '12.5',
   joint_efficiency: '1.0',
-  y_coefficient: '',  // 비워두면 B31.1 Table 104.1.2(A) 자동
-  weld_strength_factor: '1.0',
+  y_coefficient: '',       // 비워두면 Table 104.1.2-1 자동
+  weld_strength_factor: '', // 비워두면 Table 102.4.7-1 자동
 }
 
 export default function App() {
@@ -23,8 +22,8 @@ export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [lastFormPayload, setLastFormPayload] = useState(null)
   const [pipeStandard, setPipeStandard] = useState('B36.10')
+  const [calcInfo, setCalcInfo] = useState(null)
   const [dnMin, setDnMin] = useState('')
   const [dnMax, setDnMax] = useState('')
 
@@ -34,6 +33,12 @@ export default function App() {
     try {
       const r = await calculate(payload)
       setResults(r.data.results)
+      setCalcInfo({
+        allowable_stress_mpa: r.data.allowable_stress_mpa,
+        y_coefficient: r.data.y_coefficient,
+        w_factor: r.data.w_factor,
+        pipe_standard: payload.pipe_standard,
+      })
     } catch (e) {
       const detail = e.response?.data?.detail
       setError(
@@ -46,16 +51,12 @@ export default function App() {
     }
   }
 
+  // p_no === '8' (Austenitic SS) → B36.19, 그 외 → B36.10
   const handleCalculate = (formPayload) => {
-    setLastFormPayload(formPayload)
-    runCalculate({ ...formPayload, pipe_standard: pipeStandard })
-  }
-
-  const handleStandardChange = (std) => {
+    const { _p_no, ...payload } = formPayload
+    const std = _p_no === '8' ? 'B36.19' : 'B36.10'
     setPipeStandard(std)
-    if (lastFormPayload) {
-      runCalculate({ ...lastFormPayload, pipe_standard: std })
-    }
+    runCalculate({ ...payload, pipe_standard: std })
   }
 
   return (
@@ -88,11 +89,11 @@ export default function App() {
             results={results}
             loading={loading}
             error={error}
+            calcInfo={calcInfo}
             pipeStandard={pipeStandard}
             dnMin={dnMin}
             dnMax={dnMax}
             onCalculate={handleCalculate}
-            onStandardChange={handleStandardChange}
             onDnMinChange={setDnMin}
             onDnMaxChange={setDnMax}
           />
